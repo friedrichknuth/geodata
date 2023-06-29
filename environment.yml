@@ -1,0 +1,11 @@
+name: dataquery
+channels:
+  - conda-forge
+dependencies:
+  - rioxarray
+  - flake8
+  - black
+  - pytest
+  - pip
+  - pystac-client
+  - planetary-computer
