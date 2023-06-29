@@ -1,4 +1,4 @@
-name: dataquery
+name: geodata
 channels:
   - conda-forge
 dependencies:

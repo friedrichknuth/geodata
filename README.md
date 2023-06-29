@@ -1,4 +1,4 @@
-# dataquery
+# geodata
 Python library and client for public geospatial data retrieval
 
 
@@ -13,10 +13,10 @@ $ conda install mamba -n base -c conda-forge
 Clone the repo and set up the conda environment  
 
 ```
-$ git clone https://github.com/friedrichknuth/dataquery.git
-$ cd ./dataquery
+$ git clone https://github.com/friedrichknuth/geodata.git
+$ cd ./geodata
 $ mamba env create -f environment.yml
-$ conda activate dataquery
+$ conda activate geodata
 $ pip install .
 ```
 
@@ -27,9 +27,9 @@ $ pip install .
 ```
 # Download 3DEP DSM from Planetary Computer
 
-import dataquery as dq
+import geodata as gd
 
-dq.dems.download_planetary_3DEP_DSM(
+gd.dems.download_planetary_3DEP_DSM(
     collection="3dep-lidar-dsm",
     bbox=[-121.846, 48.7, -121.823, 48.76],
     time_range="2000-12-01/2020-12-31",

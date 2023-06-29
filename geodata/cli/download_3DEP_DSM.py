@@ -1,6 +1,6 @@
 import click
 
-import dataquery
+import geodata as gd
 
 
 @click.command()
@@ -38,7 +38,7 @@ def main(
 ):
     bbox = [float(x) for x in bbox.split(" ")]
 
-    dataquery.dems.download_planetary_3DEP_DSM(
+    gd.dems.download_planetary_3DEP_DSM(
         collection,
         bbox,
         time_range,
