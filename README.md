@@ -22,7 +22,7 @@ $ pip install .
 
 ## Usage
 
-### From Command Line
+### From Python
 
 ```
 # Download 3DEP DSM from Planetary Computer
