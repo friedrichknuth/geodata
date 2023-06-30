@@ -11,7 +11,7 @@ def test_planetery_items():
         time_range="2000-12-01/2020-12-31",
     )
 
-    Planetary.request_planetary_items()
+    Planetary.request_items()
 
     val = [
         "USGS_LPC_WA_Western_North_2016_LAS_2018-dsm-2m-5-16.tif",

@@ -27,15 +27,17 @@ $ pip install .
 ```
 # Download 3DEP DSM from Planetary Computer
 
-import geodata as gd
+import geodata
 
-gd.dems.download_planetary_3DEP_DSM(
+Planetary = geodata.dems.Planetary(
     collection="3dep-lidar-dsm",
     bbox=[-121.846, 48.7, -121.823, 48.76],
     time_range="2000-12-01/2020-12-31",
     output_folder="downloads",
     overwrite=True,
 )
+
+Planetary.download_3DEP_DSM()
 
 ```
 

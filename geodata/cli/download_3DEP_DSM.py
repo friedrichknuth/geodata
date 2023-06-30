@@ -48,9 +48,7 @@ def main(
         overwrite,
     )
 
-    Planetary.request_planetary_items()
-
-    Planetary.download_planetary_3DEP_DSM()
+    Planetary.download_3DEP_DSM()
 
 
 if __name__ == "__main__":

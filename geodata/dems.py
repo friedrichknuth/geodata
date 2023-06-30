@@ -24,7 +24,7 @@ class Planetary:
         self.output_folder = output_folder
         self.overwrite = overwrite
 
-    def request_planetary_items(self):
+    def request_items(self):
         print("bounding box:", self.bbox)
         print("time range:", self.time_range)
 
@@ -48,7 +48,9 @@ class Planetary:
 
         print(len(self.items), "items found at", self.base_url)
 
-    def download_planetary_3DEP_DSM(self):
+    def download_3DEP_DSM(self):
+        Planetary.request_items(self)
+
         exist = []
         payload = []
         for fn in self.dsm_file_names:
