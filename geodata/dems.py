@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 import pystac
 from pystac_client import Client
@@ -6,76 +8,89 @@ import rioxarray
 import psutil
 
 
-def download_planetary_3DEP_DSM(
-    collection="3dep-lidar-dsm",
-    bbox=[-121.846, 48.7, -121.823, 48.76],
-    time_range="2000-12-01/2020-12-31",
-    output_folder="downloads",
-    overwrite=False,
-):
-    base_url = "https://planetarycomputer.microsoft.com/api/stac/v1"
+class Planetary:
+    def __init__(
+        self,
+        collection="3dep-lidar-dsm",
+        bbox=[-121.846, 48.7, -121.823, 48.76],
+        time_range="2000-12-01/2020-12-31",
+        output_folder="downloads",
+        overwrite=bool(False),
+    ):
+        self.base_url = "https://planetarycomputer.microsoft.com/api/stac/v1"
+        self.collection = collection
+        self.bbox = bbox
+        self.time_range = time_range
+        self.output_folder = output_folder
+        self.overwrite = overwrite
 
-    print("bounding box:", bbox)
-    print("time range:", time_range)
+    def request_planetary_items(self):
+        print("bounding box:", self.bbox)
+        print("time range:", self.time_range)
 
-    Path(output_folder).mkdir(parents=True, exist_ok=True)
+        Path(self.output_folder).mkdir(parents=True, exist_ok=True)
 
-    dsm_file_names = []
-    catalog = Client.open(base_url)
-    search = catalog.search(collections=[collection], bbox=bbox, datetime=time_range)
-    items = search.item_collection()
+        catalog = Client.open(self.base_url)
+        search = catalog.search(
+            collections=[self.collection], bbox=self.bbox, datetime=self.time_range
+        )
+        items = search.item_collection()
 
-    print(len(items), "items found at", base_url)
-    for i in items:
-        url = i.assets["data"].href
-        dsm_file_names.append(url.split("/")[-1])
+        self.items = items
 
-    exist = []
-    payload = []
-    for fn in dsm_file_names:
-        out = Path(output_folder, fn)
+        dsm_file_names = []
 
-        if out.exists() and not overwrite:
-            exist.append(out)
-        else:
-            payload.append(out)
-    if exist:
-        print("\noverwrite set to False")
-        print("\nthe following files already exist:")
-        for fn in exist:
-            print(fn)
+        for i in self.items:
+            url = i.assets["data"].href
+            dsm_file_names.append(url.split("/")[-1])
 
-    if payload:
-        print("\ndownloading:")
-        for fn in payload:
-            print(fn)
+        self.dsm_file_names = dsm_file_names
 
-        for fn in payload:
-            item = pystac.Item.from_file(
-                "/".join(
-                    [
-                        base_url,
-                        "collections",
-                        collection,
-                        "items",
-                        fn.with_suffix("").name,
-                    ]
+        print(len(self.items), "items found at", self.base_url)
+
+    def download_planetary_3DEP_DSM(self):
+        exist = []
+        payload = []
+        for fn in self.dsm_file_names:
+            out = Path(self.output_folder, fn)
+
+            if out.exists() and not self.overwrite:
+                exist.append(out)
+            else:
+                payload.append(out)
+        if exist:
+            print("\noverwrite set to False")
+            print("\nthe following files already exist:")
+            for fn in exist:
+                print(fn)
+
+        if payload:
+            print("\ndownloading:")
+            for fn in payload:
+                print(fn)
+
+            for fn in payload:
+                item = pystac.Item.from_file(
+                    "/".join(
+                        [
+                            self.base_url,
+                            "collections",
+                            self.collection,
+                            "items",
+                            fn.with_suffix("").name,
+                        ]
+                    )
                 )
-            )
 
-            signed_item = planetary_computer.sign(item)
-            signed_item_url = signed_item.assets["data"].href
+                signed_item = planetary_computer.sign(item)
+                signed_item_url = signed_item.assets["data"].href
 
-            ds = rioxarray.open_rasterio(signed_item_url)
+                ds = rioxarray.open_rasterio(signed_item_url)
 
-            ds.rio.to_raster(out, compress="lzw")
+                ds.rio.to_raster(out, compress="lzw")
 
-        print("\ndownload complete")
+            print("\ndownload complete")
 
-        return True
-
-    elif not exist and not payload:
-        print("\nno data available within specified bounds")
-        print("check your bbox and time range inputs")
-
-        return False
+        elif not exist and not payload:
+            print("\nno data available within specified bounds")
+            print("check your bbox and time range inputs")

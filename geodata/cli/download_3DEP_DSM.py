@@ -1,6 +1,6 @@
 import click
 
-import geodata as gd
+import geodata
 
 
 @click.command()
@@ -28,7 +28,9 @@ import geodata as gd
     default="downloads",
     help="Output folder. Default: downloads",
 )
-@click.option("--overwrite", default=False, help="Set to overwrite existing outputs")
+@click.option(
+    "--overwrite", is_flag=True, default=False, help="Set to overwrite existing outputs"
+)
 def main(
     collection,
     bbox,
@@ -38,13 +40,17 @@ def main(
 ):
     bbox = [float(x) for x in bbox.split(" ")]
 
-    gd.dems.download_planetary_3DEP_DSM(
+    Planetary = geodata.dems.Planetary(
         collection,
         bbox,
         time_range,
         output_folder,
         overwrite,
     )
+
+    Planetary.request_planetary_items()
+
+    Planetary.download_planetary_3DEP_DSM()
 
 
 if __name__ == "__main__":
