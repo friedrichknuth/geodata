@@ -53,3 +53,5 @@ download_3DEP_DSM --collection 3dep-lidar-dsm \
                   --overwrite
 
 ```
+### Contibuting
+See [github instructions under wiki](https://github.com/friedrichknuth/geodata/wiki/Contributing-to-geodata) to contibute new functionality
