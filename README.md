@@ -1,6 +1,9 @@
 # geodata
 Python library and client for public geospatial data retrieval
 
+## Functionality
+- Download [USGS 3DEP Lidar Digital Surface Elevation Models](https://planetarycomputer.microsoft.com/dataset/3dep-lidar-dsm) from Microsoft Planetary Computer
+- ...
 
 ## Installation
 
