@@ -52,7 +52,7 @@ Planetary.download_3DEP_DSM()
 download_3DEP_DSM --collection 3dep-lidar-dsm \
                   --bbox '-121.846 48.7 -121.823 48.76' \
                   --time-range 2000-12-01/2020-12-31 \
-                  --output-folder downloads
+                  --output-folder downloads \
                   --overwrite
 
 ```
