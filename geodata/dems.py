@@ -89,7 +89,7 @@ class Planetary:
 
                 ds = rioxarray.open_rasterio(signed_item_url)
 
-                ds.rio.to_raster(out, compress="lzw")
+                ds.rio.to_raster(fn, compress="lzw")
 
             print("\ndownload complete")
 
