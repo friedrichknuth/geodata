@@ -61,13 +61,13 @@ class Planetary:
             else:
                 payload.append(out)
         if exist:
-            print("\noverwrite set to False")
-            print("\nthe following files already exist:")
+            print("overwrite set to False")
+            print("the following files already exist:")
             for fn in exist:
                 print(fn)
 
         if payload:
-            print("\ndownloading:")
+            print("downloading:")
             for fn in payload:
                 print(fn)
 
@@ -91,8 +91,8 @@ class Planetary:
 
                 ds.rio.to_raster(fn, compress="lzw")
 
-            print("\ndownload complete")
+            print("download complete")
 
         elif not exist and not payload:
-            print("\nno data available within specified bounds")
+            print("no data available within specified bounds")
             print("check your bbox and time range inputs")
