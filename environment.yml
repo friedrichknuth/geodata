@@ -10,3 +10,5 @@ dependencies:
   - pystac-client
   - planetary-computer
   - psutil
+  - fsspec
+  
