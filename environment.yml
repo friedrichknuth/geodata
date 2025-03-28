@@ -11,4 +11,7 @@ dependencies:
   - planetary-computer
   - psutil
   - fsspec
+  - s3fs
+  - dask
+
   
