@@ -30,8 +30,7 @@ jobs:
         echo $CONDA/bin >> $GITHUB_PATH
     - name: Install dependencies
       run: |
-        conda install mamba -c conda-forge
-        mamba env update --file environment.yml --name geodata
+        conda env update --file environment.yml --name geodata
         source $CONDA/etc/profile.d/conda.sh
         conda activate geodata
         pip install .
