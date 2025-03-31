@@ -233,19 +233,28 @@ class Copernicus:
                 error_message += "\n".join(missing_tiles)
                 raise ValueError(error_message)
 
-    def download_tiles(self):
+    def download_tiles(self, overwrite=False):
         Copernicus.build_urls(self)
         Path(self.output_folder).mkdir(parents=True, exist_ok=True)
 
         output_files = []
         for url in self.s3_urls:
             fn = Path(self.output_folder.rstrip("/") + "/", Path(url).name)
-            # fn = Path(url.replace(self.base_url_s3, self.output_folder.rstrip('/')+'/'))
             output_files.append(fn)
 
-        for i, url in enumerate(self.s3_urls):
-            fn = output_files[i]
+        to_download = []
+        for i, fn in enumerate(output_files):
+            if fn.exists() and not overwrite:
+                print(f"File {fn} already exists. Skipping download.")
+            else:
+                to_download.append((self.s3_urls[i], fn))
+
+        if not to_download:
+            print("No new tiles to download.")
+            return
+
+        for url, fn in to_download:
             ds = rioxarray.open_rasterio(self.fs.open(url, "rb"))
             ds.rio.to_raster(fn, compress="lzw")
 
-        print("download complete")
+        print("Download complete")
