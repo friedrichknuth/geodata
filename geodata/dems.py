@@ -149,7 +149,6 @@ class Copernicus:
         overwrite=bool(False),
     ):
         # TODO
-        # - add test for valid bbox in different hemispheres
         # - add support for returning virtual object as xarray dataset
         # - add support for writing vrt pointing to remote files
         # - add support for writing vrt pointing to local files
@@ -228,11 +227,11 @@ class Copernicus:
         if self.s3_urls:
             print(len(self.s3_urls), "valid urls found")
         else:
-            print("no valid urls found")
+            error_message = "No valid URLs found for the specified bounding box. "
             if missing_tiles:
-                print("Check validity of urls searched:")
-                for tile in missing_tiles:
-                    print(tile)
+                error_message += "The following tiles are missing or inaccessible:\n"
+                error_message += "\n".join(missing_tiles)
+                raise ValueError(error_message)
 
     def download_tiles(self):
         Copernicus.build_urls(self)
