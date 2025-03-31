@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import fsspec
@@ -8,7 +9,14 @@ import planetary_computer
 import psutil
 import pystac
 import rioxarray
+import xarray as xr
 from pystac_client import Client
+
+# TODO
+# - create a general class to handle common operations between Copernicus and Planetary classes
+#   - returning virtual object as xarray dataset
+#   - add support for writing vrt pointing to remote files
+#   - add support for writing vrt pointing to local files
 
 
 class Planetary:
@@ -129,7 +137,6 @@ class Planetary:
                 signed_item_url = signed_item.assets["data"].href
 
                 ds = rioxarray.open_rasterio(signed_item_url)
-
                 ds.rio.to_raster(fn, compress="lzw")
 
             print("download complete")
@@ -148,11 +155,6 @@ class Copernicus:
         output_folder="downloads/Copernicus",
         overwrite=bool(False),
     ):
-        # TODO
-        # - add support for returning virtual object as xarray dataset
-        # - add support for writing vrt pointing to remote files
-        # - add support for writing vrt pointing to local files
-
         VALID_COLLECTIONS = {"copernicus-dem-90m", "copernicus-dem-30m"}
 
         if collection not in VALID_COLLECTIONS:
@@ -167,6 +169,7 @@ class Copernicus:
         self.overwrite = overwrite
         self.arcsecond = "3" if collection == "copernicus-dem-90m" else "1"
         self.fs = fsspec.filesystem("s3", anon=True)
+        self.local_tiles = []
 
     def build_urls(self):
         self.s3_urls = []
@@ -225,11 +228,16 @@ class Copernicus:
                     pass
 
         if self.s3_urls:
-            print(len(self.s3_urls), "valid urls found")
+            print(
+                len(self.s3_urls),
+                "valid tile URLs found within the specified bounding box.",
+            )
         else:
-            error_message = "No valid URLs found for the specified bounding box. "
+            error_message = "No valid tile URLs found for the specified bounding box. "
             if missing_tiles:
-                error_message += "The following tiles are missing or inaccessible:\n"
+                error_message += (
+                    "The following tile URLs are missing or inaccessible:\n"
+                )
                 error_message += "\n".join(missing_tiles)
                 raise ValueError(error_message)
 
@@ -254,7 +262,64 @@ class Copernicus:
             return
 
         for url, fn in to_download:
-            ds = rioxarray.open_rasterio(self.fs.open(url, "rb"))
-            ds.rio.to_raster(fn, compress="lzw")
+            da = rioxarray.open_rasterio(self.fs.open(url, "rb"))
+            da.rio.to_raster(fn, compress="lzw")
+
+        self.local_tiles = output_files
 
         print("Download complete")
+
+    def lazy_load_tiles(self):
+        Copernicus.build_urls(self)
+        data = []
+        for url in self.s3_urls:
+            da = rioxarray.open_rasterio(self.fs.open(url, "rb"), chunks="auto")
+            data.append(da)
+        da = xr.combine_by_coords(data)
+        return da
+
+    def build_vrt_from_remote_tiles(
+        self, output_folder=None, vrt_file_name="combined.vrt"
+    ):
+        Copernicus.build_urls(self)
+        if output_folder is None:
+            output_folder = self.output_folder
+        output_file = Path(output_folder, vrt_file_name)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        if self.overwrite:
+            output_file.unlink(missing_ok=True)
+        command = " ".join(["gdalbuildvrt", output_file.as_posix()] + self.http_urls)
+        if output_file.exists():
+            print(
+                f"File {output_file} already exists and overwrite set to {self.overwrite}."
+            )
+            print("Skipping build.")
+        else:
+            print(f"Building VRT file: {output_file}")
+            subprocess.run(command, shell=True, check=True)
+
+    def build_vrt_from_local_tiles(
+        self, local_tiles=None, output_folder=None, vrt_file_name="combined.vrt"
+    ):
+        if not local_tiles and not self.local_tiles:
+            raise ValueError(
+                "No local tiles found. Please specify local_tiles input or download tiles first."
+            )
+        elif not local_tiles and self.local_tiles:
+            local_tiles = self.local_tiles
+        local_tiles = [Path(tile).as_posix() for tile in local_tiles]
+        if output_folder is None:
+            output_folder = self.output_folder
+        output_file = Path(output_folder, vrt_file_name)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        if self.overwrite:
+            output_file.unlink(missing_ok=True)
+        command = " ".join(["gdalbuildvrt", output_file.as_posix()] + local_tiles)
+        if output_file.exists():
+            print(
+                f"File {output_file} already exists and overwrite set to {self.overwrite}."
+            )
+            print("Skipping build.")
+        else:
+            print(f"Building VRT file: {output_file}")
+            subprocess.run(command, shell=True, check=True)
