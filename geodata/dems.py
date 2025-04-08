@@ -9,6 +9,7 @@ import planetary_computer
 import psutil
 import pystac
 import rioxarray
+import stackstac
 import xarray as xr
 from pystac_client import Client
 
@@ -60,17 +61,27 @@ class Planetary:
 
     def __init__(
         self,
-        collection="3dep-lidar-dsm",
-        bbox=[-121.846, 48.7, -121.823, 48.76],
-        time_range="2000-12-01/2020-12-31",
-        output_folder="downloads/Planetary",
-        overwrite=bool(False),
+        collection: str = "3dep-lidar-dsm",
+        bbox: list[float] = [-121.846, 48.7, -121.823, 48.76],
+        time_range: str = "2000-12-01/2020-12-31",
+        output_folder: str = "downloads/Planetary",
+        overwrite: bool = False,
     ):
+        """
+        Initialize the Planetary class.
+
+        Parameters:
+            collection (str): The name of the data collection to query. Default is "3dep-lidar-dsm".
+            bbox (list[float]): The bounding box for the area of interest in [min_lon, min_lat, max_lon, max_lat] format.
+            time_range (str): The time range for the data query in "YYYY-MM-DD/YYYY-MM-DD" format.
+            output_folder (str): The folder where downloaded files will be saved.
+            overwrite (bool): Whether to overwrite existing files in the output folder.
+        """
         self.base_url = "https://planetarycomputer.microsoft.com/api/stac/v1"
         self.collection = collection
         self.bbox = bbox
         self.time_range = time_range
-        self.output_folder = output_folder
+        self.output_folder = Path(output_folder)
         self.overwrite = overwrite
 
     def request_items(self):
@@ -149,11 +160,10 @@ class Planetary:
 class Copernicus:
     def __init__(
         self,
-        collection="copernicus-dem-90m",
-        # bbox=[-121.846, 48.7, -121.823, 48.76], # easton
-        bbox=[-24.23, 63.28, -13.33, 66.46],  # icealand
-        output_folder="downloads/Copernicus",
-        overwrite=bool(False),
+        collection: str = "copernicus-dem-90m",
+        bbox: List[float] = [-24.23, 63.28, -13.33, 66.46],
+        output_folder: str = "downloads/Copernicus",
+        overwrite: bool = False,
     ):
         VALID_COLLECTIONS = {"copernicus-dem-90m", "copernicus-dem-30m"}
 
@@ -323,3 +333,115 @@ class Copernicus:
         else:
             print(f"Building VRT file: {output_file}")
             subprocess.run(command, shell=True, check=True)
+
+
+class PGC:
+    def __init__(
+        self,
+        collection: str = "arcticdem-mosaics-v3.0-32m",
+        bbox: list[float] = [-19.4, 63.5, -18.8, 63.8],  # myrdalsjokull
+        # bbox: list[float] = [-61.25390699 -65.32412875 -59.22577797 -64.82460726],# rema
+        epsg_code: int = None,
+        time_range: str = "2000-12-01/2025-12-31",
+        output_folder: str = "downloads/PGC",
+        overwrite: bool = False,
+    ):
+        # TODO
+        # - add support for downloading mosaics
+        # - add support for downloading strips
+        # - create subclass for mosaics and strips
+        # - add support for returning virtual strips object as xarray dataset
+        # - add support for writing vrt pointing to remote files
+        # - add support for writing vrt pointing to local files
+
+        """
+        Initialize the PGC class.
+
+        Parameters:
+            collection (str): The name of the data collection to query. Default is "3dep-lidar-dsm".
+            bbox (list[float]): The bounding box for the area of interest in [min_lon, min_lat, max_lon, max_lat] format.
+            epsg_code (int): The EPSG code for the desired output coordinate reference system. Default is None.
+            time_range (str): The time range for the data query in "YYYY-MM-DD/YYYY-MM-DD" format.
+            output_folder (str): The folder where downloaded files will be saved.
+            overwrite (bool): Whether to overwrite existing files in the output folder.
+        """
+        self.base_url = "https://stac.pgc.umn.edu/api/v1/"
+        self.collection = collection
+        self.bbox = bbox
+        self.epsg_code = epsg_code
+        self.time_range = time_range
+        self.output_folder = Path(output_folder)
+        self.overwrite = overwrite
+
+        VALID_COLLECTIONS = {
+            "arcticdem-mosaics-v3.0-2m",
+            "arcticdem-mosaics-v3.0-10m",
+            "arcticdem-mosaics-v3.0-32m",
+            "arcticdem-mosaics-v4.1-2m",
+            "arcticdem-mosaics-v4.1-10m",
+            "arcticdem-mosaics-v4.1-32m",
+            "arcticdem-strips-s2s041-2m",
+            "earthdem-strips-s2s041-2m",
+            "rema-mosaics-v2.0-2m",
+            "rema-mosaics-v2.0-10m",
+            "rema-mosaics-v2.0-32m",
+            "rema-strips-s2s041-2m",
+        }
+        if self.collection not in VALID_COLLECTIONS:
+            raise ValueError(
+                f"Invalid collection '{collection}'. Must be one of: {', '.join(VALID_COLLECTIONS)}"
+            )
+        catalog = Client.open(self.base_url)
+        search = catalog.search(
+            collections=[self.collection], bbox=self.bbox, datetime=self.time_range
+        )
+        items = search.item_collection()
+        self.items = items
+
+        if not self.epsg_code:
+            self.epsg_code = int(self.items[0].properties["proj:code"].strip("EPSG:"))
+
+    def get_stack(self):
+        # TODO
+        # - need to rethink this and likely have a seperate method for mosaics and strips
+        #   that is only available based on the collection specified during initialization
+        stack = stackstac.stack(
+            self.items, epsg=self.epsg_code, bounds_latlon=self.bbox
+        )
+        stack = stack.mean(dim="time").squeeze()
+        return stack
+
+
+class ESA:
+    def __init__(
+        self,
+        collection: str = "esa-worldcover",
+        bbox: list[float] = [-19.4, 63.5, -18.8, 63.8],  # myrdalsjokull
+        epsg_code: int = 4326,
+        output_folder: str = "downloads/ESA",
+    ):
+        """
+        Initialize the ESA class.
+
+        """
+        self.base_url = "https://planetarycomputer.microsoft.com/api/stac/v1"
+        self.collection = collection
+        self.bbox = bbox
+        self.epsg_code = epsg_code
+        self.output_folder = Path(output_folder)
+
+        catalog = Client.open(self.base_url, modifier=planetary_computer.sign_inplace)
+        search = catalog.search(
+            collections=[self.collection],
+            bbox=self.bbox,
+        )
+        items = search.item_collection()
+
+        self.items = items[1]  # add time option for mosaic selection
+
+    def get_stack(self):
+        stack = stackstac.stack(
+            self.items, assets=["map"], epsg=self.epsg_code, bounds_latlon=self.bbox
+        )
+        categories = self.items.assets["map"].extra_fields["classification:classes"]
+        return stack.squeeze(), categories
