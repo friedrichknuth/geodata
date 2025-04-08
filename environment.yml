@@ -13,5 +13,6 @@ dependencies:
   - fsspec
   - s3fs
   - dask
+  - stackstact
 
   
